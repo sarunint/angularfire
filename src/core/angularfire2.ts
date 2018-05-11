@@ -1,15 +1,10 @@
-import { InjectionToken, NgZone } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
-import { queue } from 'rxjs/scheduler/queue';
 import { isPlatformServer } from '@angular/common';
-import { observeOn } from 'rxjs/operator/observeOn';
-
-import firebase from '@firebase/app';
-import { FirebaseApp, FirebaseOptions } from '@firebase/app-types';
-
+import { InjectionToken, NgZone } from '@angular/core';
+import { FirebaseOptions } from '@firebase/app-types';
+import { Observable, Subscription } from 'rxjs';
+import { first } from 'rxjs/operators';
+import { queue } from 'rxjs/scheduler/queue';
 import {} from 'zone.js';
-import 'rxjs/add/operator/first';
 
 export const FirebaseAppName = new InjectionToken<string>('angularfire2.appName');
 export const FirebaseAppConfig = new InjectionToken<FirebaseOptions>('angularfire2.config');
@@ -28,7 +23,7 @@ export class FirebaseZoneScheduler {
       return new Observable<T>(subscriber => {
         const noop = () => {};
         const task = Zone.current.scheduleMacroTask('firebaseZoneBlock', noop, {}, noop, noop);
-        obs$.first().subscribe(() => this.zone.runOutsideAngular(() => task.invoke()));
+        obs$.pipe(first()).subscribe(() => this.zone.runOutsideAngular(() => task.invoke()));
         return obs$.subscribe(subscriber);
       });
     } else {
