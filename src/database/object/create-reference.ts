@@ -1,6 +1,8 @@
-import { DatabaseQuery, AngularFireObject } from '../interfaces';
-import { createObjectSnapshotChanges } from './snapshot-changes';
+import { map } from 'rxjs/operators';
+
 import { AngularFireDatabase } from '../database';
+import { AngularFireObject, DatabaseQuery } from '../interfaces';
+import { createObjectSnapshotChanges } from './snapshot-changes';
 
 export function createObjectReference<T>(query: DatabaseQuery, afDatabase: AngularFireDatabase): AngularFireObject<T> {
   return {
@@ -16,13 +18,11 @@ export function createObjectReference<T>(query: DatabaseQuery, afDatabase: Angul
     update(data: Partial<T>) { return query.ref.update(data as any) as Promise<void>; },
     set(data: T) { return query.ref.set(data) as Promise<void>; },
     remove() { return query.ref.remove() as Promise<void>; },
-    valueChanges<T>() { 
+    valueChanges<T>() {
       const snapshotChanges$ = createObjectSnapshotChanges(query)();
-      return afDatabase.scheduler.keepUnstableUntilFirst(
-        afDatabase.scheduler.runOutsideAngular(
-          snapshotChanges$
-        )
-      ).map(action => action.payload.exists() ? action.payload.val() as T : null)
+      return afDatabase.scheduler
+        .keepUnstableUntilFirst(afDatabase.scheduler.runOutsideAngular(snapshotChanges$))
+        .pipe(map(action => (action.payload.exists() ? (action.payload.val() as T) : null)));
     },
   }
 }

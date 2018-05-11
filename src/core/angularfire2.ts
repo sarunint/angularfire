@@ -41,4 +41,7 @@ export class FirebaseZoneScheduler {
       });
     });
   }
+  now() {
+    return +new Date();
+  }
 }

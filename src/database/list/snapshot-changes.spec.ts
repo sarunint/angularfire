@@ -1,10 +1,11 @@
-import { Reference } from '@firebase/database-types';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
-import { AngularFireDatabase, AngularFireDatabaseModule, snapshotChanges, ChildEvent } from 'angularfire2/database';
 import { TestBed, inject } from '@angular/core/testing';
+import { Reference } from '@firebase/database-types';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import { AngularFireDatabase, AngularFireDatabaseModule, ChildEvent, snapshotChanges } from 'angularfire2/database';
+import { BehaviorSubject } from 'rxjs';
+import { skip as skipOperator, switchMap, take } from 'rxjs/operators';
+
 import { COMMON_CONFIG } from '../test-config';
-import 'rxjs/add/operator/skip';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 // generate random string to test fidelity of naming
 const rando = () => (Math.random() + 1).toString(36).substring(7);
@@ -47,14 +48,14 @@ describe('snapshotChanges', () => {
     const aref = createRef(rando());
     const snapChanges = snapshotChanges(aref, events);
     return {
-      snapChanges: snapChanges.skip(skip),
+      snapChanges: snapChanges.pipe(skipOperator(skip)),
       ref: aref
     };
   }
 
   it('should listen to all events by default', (done) => {
     const { snapChanges, ref } = prepareSnapshotChanges();
-    snapChanges.take(1).subscribe(actions => {
+    snapChanges.pipe(take(1)).subscribe(actions => {
       const data = actions.map(a => a.payload!.val());
       expect(data).toEqual(items);
     }).add(done);
@@ -64,7 +65,7 @@ describe('snapshotChanges', () => {
   it('should handle multiple subscriptions (hot)', (done) => {
     const { snapChanges, ref } = prepareSnapshotChanges();
     const sub = snapChanges.subscribe(() => {}).add(done);
-    snapChanges.take(1).subscribe(actions => {
+    snapChanges.pipe(take(1)).subscribe(actions => {
       const data = actions.map(a => a.payload!.val());
       expect(data).toEqual(items);
     }).add(sub);
@@ -73,8 +74,8 @@ describe('snapshotChanges', () => {
 
   it('should handle multiple subscriptions (warm)', done => {
     const { snapChanges, ref } = prepareSnapshotChanges();
-    snapChanges.take(1).subscribe(() => {}).add(() => {
-      snapChanges.take(1).subscribe(actions => {
+    snapChanges.pipe(take(1)).subscribe(() => {}).add(() => {
+      snapChanges.pipe(take(1)).subscribe(actions => {
         const data = actions.map(a => a.payload!.val());
         expect(data).toEqual(items);
       }).add(done);
@@ -84,7 +85,7 @@ describe('snapshotChanges', () => {
 
  it('should listen to only child_added events', (done) => {
     const { snapChanges, ref } = prepareSnapshotChanges({ events: ['child_added'], skip: 0 });
-    snapChanges.take(1).subscribe(actions => {
+    snapChanges.pipe(take(1)).subscribe(actions => {
       const data = actions.map(a => a.payload!.val());
       expect(data).toEqual(items);
     }).add(done);
@@ -97,7 +98,7 @@ describe('snapshotChanges', () => {
       skip: 1
     });
     const name = 'ligatures';
-    snapChanges.take(1).subscribe(actions => {
+    snapChanges.pipe(take(1)).subscribe(actions => {
       const data = actions.map(a => a.payload!.val());;
       const copy = [...items];
       copy[0].name = name;
@@ -112,7 +113,7 @@ describe('snapshotChanges', () => {
   it('should handle empty sets', done => {
     const aref = createRef(rando());
     aref.set({});
-    snapshotChanges(aref).take(1).subscribe(data => {
+    snapshotChanges(aref).pipe(take(1)).subscribe(data => {
       expect(data.length).toEqual(0);
     }).add(done);
   });
@@ -121,21 +122,21 @@ describe('snapshotChanges', () => {
     const ITEMS = 10;
     let count = 0;
     let firstIndex = 0;
-    let namefilter$ = new BehaviorSubject<number|null>(null);
+    let namefilter$ = new BehaviorSubject<number | null>(null);
     const aref = createRef(rando());
     aref.set(batch);
-    namefilter$.switchMap(name => {
+    namefilter$.pipe(switchMap(name => {
       const filteredRef = name ? aref.child('name').equalTo(name) : aref
       return snapshotChanges(filteredRef);
-    }).take(2).subscribe(data => {
+    }), take(2)).subscribe(data => {
       count = count + 1;
       // the first time should all be 'added'
-      if(count === 1) {
+      if (count === 1) {
         expect(Object.keys(data).length).toEqual(3);
         namefilter$.next(-1);
       }
       // on the second round, we should have filtered out everything
-      if(count === 2) {
+      if (count === 2) {
         expect(Object.keys(data).length).toEqual(0);
       }
     }).add(done);
