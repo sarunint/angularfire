@@ -1,22 +1,18 @@
-import { User } from '@firebase/auth-types';
-import { ReflectiveInjector, Provider } from '@angular/core';
-import { Observable } from 'rxjs/Observable'
-import { Subject } from 'rxjs/Subject'
-import { Observer } from 'rxjs/Observer';
 import { TestBed, inject } from '@angular/core/testing';
-import { _do } from 'rxjs/operator/do';
-import { take } from 'rxjs/operator/take';
-import { skip } from 'rxjs/operator/skip';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule, FirebaseAppName } from 'angularfire2';
+import { User } from '@firebase/auth-types';
+import { AngularFireModule, FirebaseApp, FirebaseAppConfig, FirebaseAppName } from 'angularfire2';
 import { AngularFireAuth, AngularFireAuthModule } from 'angularfire2/auth';
+import { Observable, Subject } from 'rxjs';
+import { skip, take } from 'rxjs/operators';
+
 import { COMMON_CONFIG } from './test-config';
 
 function authTake(auth: Observable<any>, count: number): Observable<any> {
-  return take.call(auth, 1);
+  return auth.pipe(take(1));
 }
 
 function authSkip(auth: Observable<any>, count: number): Observable<any> {
-  return skip.call(auth, 1);
+  return auth.pipe(skip(1));
 }
 
 const firebaseUser = <User> {

@@ -1,13 +1,9 @@
-import { FirebaseAuth, User } from '@firebase/auth-types';
+import { Inject, Injectable, NgZone, Optional, PLATFORM_ID } from '@angular/core';
 import { FirebaseOptions } from '@firebase/app-types';
-import { Injectable, Inject, Optional, NgZone, PLATFORM_ID } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-
-import { FirebaseAppConfig, FirebaseAppName, _firebaseAppFactory, FirebaseZoneScheduler } from 'angularfire2';
-
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/fromPromise';
+import { FirebaseAuth, User } from '@firebase/auth-types';
+import { FirebaseAppConfig, FirebaseAppName, FirebaseZoneScheduler, _firebaseAppFactory } from 'angularfire2';
+import { Observable, from as observableFrom, of as observableOf } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Injectable()
 export class AngularFireAuth {
@@ -48,16 +44,16 @@ export class AngularFireAuth {
       )
     );
 
-    this.idToken = scheduler.keepUnstableUntilFirst(
+    this.idToken = scheduler.keepUnstableUntilFirst<User | null>(
       scheduler.runOutsideAngular(
         new Observable(subscriber => {
           const unsubscribe = this.auth.onIdTokenChanged(subscriber);
           return { unsubscribe };
         })
       )
-    ).switchMap((user:User|null) => {
-      return user ? Observable.fromPromise(user.getIdToken()) : Observable.of(null)
-    });
+    ).pipe(switchMap((user: User | null) => {
+      return user ? observableFrom(user.getIdToken()) : observableOf(null)
+    }));
 
   }
 
