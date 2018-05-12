@@ -1,8 +1,5 @@
-import { Observable } from 'rxjs/Observable';
-import { Operator } from 'rxjs/Operator';
-import { Subscriber } from 'rxjs/Subscriber';
-import { Subscription } from 'rxjs/Subscription';
 import { Reference } from '@firebase/database-types';
+import { Observable, Operator, Subscriber, Subscription } from 'rxjs';
 
 export class FirebaseObjectObservable<T> extends Observable<T> {
   constructor(subscribe?: <R>(subscriber: Subscriber<R>) => Subscription | Function | void, public $ref?:Reference) {

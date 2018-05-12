@@ -1,20 +1,21 @@
-import { DataSnapshot } from '@firebase/database-types';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule} from 'angularfire2';
-import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseListObservable,
-  FirebaseListFactory, onChildAdded, onChildChanged, onChildRemoved, onChildUpdated,
-  FirebaseObjectFactory
-} from 'angularfire2/database-deprecated';
 import { TestBed, inject } from '@angular/core/testing';
-import * as utils from './utils';
-import { Query, AFUnwrappedDataSnapshot } from './interfaces';
-import { Subscription, Observable, Subject } from 'rxjs';
+import { DataSnapshot } from '@firebase/database-types';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import {
+  AngularFireDatabase,
+  AngularFireDatabaseModule,
+  FirebaseListFactory,
+  FirebaseListObservable,
+  onChildAdded,
+  onChildChanged,
+  onChildRemoved,
+  onChildUpdated
+} from 'angularfire2/database-deprecated';
+import { Observable, Subject, Subscription } from 'rxjs';
+import { filter, map, skip, take, tap, toArray } from 'rxjs/operators';
+
 import { COMMON_CONFIG } from './test-config';
-import { _do } from 'rxjs/operator/do';
-import { map } from 'rxjs/operator/map';
-import { skip } from 'rxjs/operator/skip';
-import { take } from 'rxjs/operator/take';
-import { toArray } from 'rxjs/operator/toArray';
-import { toPromise } from 'rxjs/operator/toPromise';
+import * as utils from './utils';
 
 const questionsPath = 'questions';
 
@@ -396,7 +397,7 @@ describe('FirebaseListFactory', () => {
 
     it('should emit only when the initial data set has been loaded', (done: any) => {
       questions.$ref.ref.set([{ initial1: true }, { initial2: true }, { initial3: true }, { initial4: true }])
-        .then(() => toPromise.call(skipAndTake(questions, 1)))
+        .then(() => skipAndTake(questions, 1).toPromise())
         .then((val: any[]) => {
           expect(val.length).toBe(4);
         })
@@ -427,21 +428,20 @@ describe('FirebaseListFactory', () => {
           );
           questions.push({ number: 2 });
           calls.push('pushed');
-        })
-        .catch(done.fail);
+        }, done.fail);
     });
 
 
     it('should emit a new value when a child moves', (done: any) => {
-     let question = skipAndTake(questions, 1, 2)
-     subscription = _do.call(question, (data: any) => {
+      let question = skipAndTake(questions, 1, 2)
+      subscription = question.pipe(tap((data: any) => {
         expect(data.length).toBe(2);
         expect(data[0].push2).toBe(true);
         expect(data[1].push1).toBe(true);
-      })
-      .subscribe(() => {
-        done();
-      }, done.fail);
+      }))
+        .subscribe(() => {
+          done();
+        }, done.fail);
 
       let child1 = ref.push({ push1: true }, () => {
         ref.push({ push2: true }, () => {
@@ -454,13 +454,13 @@ describe('FirebaseListFactory', () => {
     it('should emit unwrapped data by default', (done: any) => {
       ref.remove(() => {
         ref.push({ unwrapped: true }, () => {
-          subscription = _do.call(skipAndTake(questions, 1), (data: any) => {
+          subscription = skipAndTake(questions, 1).pipe(tap((data: any) => {
             expect(data.length).toBe(1);
             expect(data[0].unwrapped).toBe(true);
-          })
-          .subscribe(() => {
-            done();
-          }, done.fail);
+          }))
+            .subscribe(() => {
+              done();
+            }, done.fail);
         });
       });
     });
@@ -468,12 +468,12 @@ describe('FirebaseListFactory', () => {
 
     it('should emit snapshots if preserveSnapshot option is true', (done: any) => {
       refSnapshotted.push('hello snapshot!', () => {
-        subscription = _do.call(skipAndTake(questionsSnapshotted, 1),(data: any) => {
+        subscription = skipAndTake(questionsSnapshotted, 1).pipe(tap((data: any) => {
           expect(data[0].val()).toEqual('hello snapshot!');
-        })
-        .subscribe(() => {
-          done();
-        }, done.fail);
+        }))
+          .subscribe(() => {
+            done();
+          }, done.fail);
       });
     });
 
@@ -522,8 +522,8 @@ describe('FirebaseListFactory', () => {
 
       questions.$ref.ref.set({
         val1,
-        val2: Object.assign({}, val2, { extra: true }),
-        val3: Object.assign({}, val3, { extra: true }),
+        val2: (<any>Object).assign({}, val2, { extra: true }),
+        val3: (<any>Object).assign({}, val3, { extra: true }),
       })
       .then(() => {
 
@@ -550,8 +550,8 @@ describe('FirebaseListFactory', () => {
 
       questions.$ref.ref.set({
         val1,
-        val2: Object.assign({}, val2, { extra: true }),
-        val3: Object.assign({}, val3, { extra: true }),
+        val2: (<any>Object).assign({}, val2, { extra: true }),
+        val3: (<any>Object).assign({}, val3, { extra: true }),
       })
       .then(() => {
 
@@ -658,9 +658,9 @@ describe('FirebaseListFactory', () => {
 
       it('should return an object value with a $value property if value is scalar', () => {
         const existsFn = () => { return true; }
-        const unwrappedValue5 = utils.unwrapMapFn(Object.assign(snapshot, { val: () => 5, exists: existsFn }) as DataSnapshot);
-        const unwrappedValueFalse = utils.unwrapMapFn(Object.assign(snapshot, { val: () => false, exists: existsFn }) as DataSnapshot);
-        const unwrappedValueLol = utils.unwrapMapFn(Object.assign(snapshot, { val: () => 'lol', exists: existsFn }) as DataSnapshot);
+        const unwrappedValue5 = utils.unwrapMapFn((<any>Object).assign(snapshot, { val: () => 5, exists: existsFn }) as DataSnapshot);
+        const unwrappedValueFalse = utils.unwrapMapFn((<any>Object).assign(snapshot, { val: () => false, exists: existsFn }) as DataSnapshot);
+        const unwrappedValueLol = utils.unwrapMapFn((<any>Object).assign(snapshot, { val: () => 'lol', exists: existsFn }) as DataSnapshot);
 
         expect(unwrappedValue5.$key).toEqual('key');
         expect(unwrappedValue5.$value).toEqual(5);
@@ -683,9 +683,7 @@ describe('FirebaseListFactory', () => {
       .run(() => {
         // Creating a new observable so that the current zone is captured.
         subscription = FirebaseListFactory(app.database().ref(`questions`))
-          .filter(d => d
-            .map((v: any) => v.$value)
-            .indexOf('in-the-zone') > -1)
+          .pipe(filter(d => d.map((v: any) => v.$value).indexOf('in-the-zone') > -1))
           .subscribe(data => {
             expect(Zone.current.name).toBe('newZone');
             done();
@@ -709,9 +707,9 @@ describe('FirebaseListFactory', () => {
       let keyToRemove: string;
 
       afterEach((done: any) => {
-        subscription = questions
-          .skip(2)
-          .take(1)
+        subscription = questions.pipe(
+          skip(2),
+          take(1))
           .subscribe((items: any[]) => {
             expect(items.length).toBe(3);
             done();
@@ -739,9 +737,9 @@ describe('FirebaseListFactory', () => {
       it('should support the optional key parameter to startAt', (done) => {
 
         questions.$ref.ref.set({
-          val1: Object.assign({}, val1, { data: 0 }),
-          val2: Object.assign({}, val2, { data: 0 }),
-          val3: Object.assign({}, val3, { data: 0 })
+          val1: (<any>Object).assign({}, val1, { data: 0 }),
+          val2: (<any>Object).assign({}, val2, { data: 0 }),
+          val3: (<any>Object).assign({}, val3, { data: 0 })
         })
         .then(() => {
 
@@ -751,7 +749,7 @@ describe('FirebaseListFactory', () => {
               startAt: { value: 0 }
             }
           });
-          let promise1 = toPromise.call(take.call(query1, 1));
+          let promise1 = query1.pipe(take(1)).toPromise();
 
           let query2 = FirebaseListFactory(app.database().ref(`questions`), {
             query: {
@@ -759,7 +757,7 @@ describe('FirebaseListFactory', () => {
               startAt: { value: 0, key: 'val2' }
             }
           });
-          let promise2 = toPromise.call(take.call(query2, 1));
+          let promise2 = query2.pipe(take(1)).toPromise();
 
           Promise.all([promise1, promise2]).then(([list1, list2]) => {
             expect(list1.map((i: any) => i.$key)).toEqual(['val1', 'val2', 'val3']);
@@ -777,9 +775,9 @@ describe('FirebaseListFactory', () => {
       it('should support the optional key parameter to equalTo', (done) => {
 
         questions.$ref.ref.set({
-          val1: Object.assign({}, val1, { data: 0 }),
-          val2: Object.assign({}, val2, { data: 0 }),
-          val3: Object.assign({}, val3, { data: 0 })
+          val1: (<any>Object).assign({}, val1, { data: 0 }),
+          val2: (<any>Object).assign({}, val2, { data: 0 }),
+          val3: (<any>Object).assign({}, val3, { data: 0 })
         })
         .then(() => {
 
@@ -789,7 +787,7 @@ describe('FirebaseListFactory', () => {
               equalTo: { value: 0 }
             }
           });
-          let promise1 = toPromise.call(take.call(query1, 1));
+          let promise1 = query1.pipe(take(1)).toPromise();
 
           let query2 = FirebaseListFactory(app.database().ref(`questions`), {
             query: {
@@ -797,7 +795,7 @@ describe('FirebaseListFactory', () => {
               equalTo: { value: 0, key: 'val2' }
             }
           });
-          let promise2 = toPromise.call(take.call(query2, 1));
+          let promise2 = query2.pipe(take(1)).toPromise();
 
           Promise.all([promise1, promise2]).then(([list1, list2]) => {
             expect(list1.map((i: any) => i.$key)).toEqual(['val1', 'val2', 'val3']);
@@ -815,9 +813,9 @@ describe('FirebaseListFactory', () => {
       it('should support the optional key parameter to endAt', (done) => {
 
         questions.$ref.ref.set({
-          val1: Object.assign({}, val1, { data: 0 }),
-          val2: Object.assign({}, val2, { data: 0 }),
-          val3: Object.assign({}, val3, { data: 0 })
+          val1: (<any>Object).assign({}, val1, { data: 0 }),
+          val2: (<any>Object).assign({}, val2, { data: 0 }),
+          val3: (<any>Object).assign({}, val3, { data: 0 })
         })
         .then(() => {
 
@@ -827,7 +825,7 @@ describe('FirebaseListFactory', () => {
               endAt: { value: 0 }
             }
           });
-          let promise1 = toPromise.call(take.call(query1, 1));
+          let promise1 = query1.pipe(take(1)).toPromise();
 
           let query2 = FirebaseListFactory(app.database().ref(`questions`), {
             query: {
@@ -835,7 +833,7 @@ describe('FirebaseListFactory', () => {
               endAt: { value: 0, key: 'val2' }
             }
           });
-          let promise2 = toPromise.call(take.call(query2, 1));
+          let promise2 = query2.pipe(take(1)).toPromise();
 
           Promise.all([promise1, promise2]).then(([list1, list2]) => {
             expect(list1.map((i: any) => i.$key)).toEqual(['val1', 'val2', 'val3']);
@@ -885,7 +883,7 @@ describe('FirebaseListFactory', () => {
           query = take.call(query, 3);
           query = toArray.call(query);
 
-          toPromise.call(query).then((emits: any) => {
+          query.toPromise().then((emits: any) => {
             expect(emits.map((e: any) => e.map((i: any) => i.$key))).toEqual([
               ['key1'],
               ['key2'],

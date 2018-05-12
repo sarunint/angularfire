@@ -1,12 +1,21 @@
-import { Observable } from 'rxjs/Observable';
-import { of as observableOf } from  'rxjs/observable/of';
-import { Operator } from 'rxjs/Operator';
-import { Observer } from 'rxjs/Observer';
-import { combineLatest } from 'rxjs/operator/combineLatest';
-import { merge } from 'rxjs/operator/merge';
-import { map } from 'rxjs/operator/map';
-import { auditTime } from 'rxjs/operator/auditTime';
-import { Query, ScalarQuery, OrderByOptions, OrderBySelection, LimitToOptions, LimitToSelection, Primitive } from './interfaces';
+import {
+  Observable,
+  Observer,
+  combineLatest as combineLatestObservable,
+  merge as mergeObservable,
+  of as observableOf
+} from 'rxjs';
+import { auditTime, map } from 'rxjs/operators';
+
+import {
+  LimitToOptions,
+  LimitToSelection,
+  OrderByOptions,
+  OrderBySelection,
+  Primitive,
+  Query,
+  ScalarQuery
+} from './interfaces';
 import { hasKey, isNil } from './utils';
 
 export function observeQuery(query: Query, audit: boolean = true): Observable<ScalarQuery> {
@@ -16,7 +25,7 @@ export function observeQuery(query: Query, audit: boolean = true): Observable<Sc
 
   return Observable.create((observer: Observer<ScalarQuery>) => {
 
-    let combined = combineLatest.call(
+    let combined = combineLatestObservable(
       getOrderObservables(query),
       getStartAtObservable(query),
       getEndAtObservable(query),
@@ -24,7 +33,7 @@ export function observeQuery(query: Query, audit: boolean = true): Observable<Sc
       getLimitToObservables(query)
     );
     if (audit) {
-      combined = auditTime.call(combined, 0);
+      combined = combined.pipe(auditTime(0));
     }
     combined
       .subscribe(([orderBy, startAt, endAt, equalTo, limitTo]
@@ -90,7 +99,7 @@ export function getOrderObservables(query: Query): Observable<OrderBySelection> 
   if (observables.length === 1) {
     return observables[0];
   } else if (observables.length > 1) {
-    return merge.apply(observables[0], observables.slice(1));
+    return mergeObservable(observables[0], ...observables.slice(1));
   } else {
     return new Observable<OrderBySelection>(subscriber => {
       subscriber.next(null!);
@@ -107,7 +116,7 @@ export function getLimitToObservables(query: Query): Observable<LimitToSelection
   if (observables.length === 1) {
     return observables[0];
   } else if (observables.length > 1) {
-    const mergedObs = merge.apply(observables[0], observables.slice(1));
+    const mergedObs = mergeObservable(observables[0], ...observables.slice(1));
     return mergedObs;
   } else {
     return new Observable<LimitToSelection>(subscriber => {
@@ -161,10 +170,9 @@ export function getEqualToObservable(query: Query): Observable<Primitive> {
 
 function mapToOrderBySelection(value: Observable<boolean | string> | boolean | string, key: OrderByOptions): Observable<OrderBySelection> {
   if (value instanceof Observable) {
-    return map
-      .call(value, (value: boolean): OrderBySelection => {
+    return value.pipe(map((value: boolean): OrderBySelection => {
         return ({ value, key });
-      });
+      }));
   } else {
     return new Observable<OrderBySelection>(subscriber => {
       subscriber.next({ key, value });
@@ -175,8 +183,7 @@ function mapToOrderBySelection(value: Observable<boolean | string> | boolean | s
 
 function mapToLimitToSelection(value: Observable<number> | number, key: LimitToOptions): Observable<LimitToSelection> {
   if (value instanceof Observable) {
-    return map
-      .call(value, (value: number): LimitToSelection => ({ value, key }));
+    return value.pipe(map((value: number): LimitToSelection => ({ value, key })));
   } else {
     return new Observable<LimitToSelection>(subscriber => {
       subscriber.next({ key, value });

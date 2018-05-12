@@ -1,13 +1,17 @@
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule} from 'angularfire2';
-import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseListObservable, FirebaseObjectFactory } from 'angularfire2/database-deprecated';
-import { Observer } from 'rxjs/Observer';
-import { map } from 'rxjs/operator/map';
+import { TestBed, inject } from '@angular/core/testing';
 import { FirebaseApp as FBApp } from '@firebase/app-types';
 import { DataSnapshot, Reference } from '@firebase/database-types';
-import { unwrapMapFn } from './utils';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import {
+  AngularFireDatabase,
+  AngularFireDatabaseModule,
+  FirebaseListObservable
+} from 'angularfire2/database-deprecated';
+import { Observer } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from './test-config';
+import { unwrapMapFn } from './utils';
 
 describe('FirebaseListObservable', () => {
   let O: FirebaseListObservable<any>;
@@ -25,7 +29,7 @@ describe('FirebaseListObservable', () => {
     inject([FirebaseApp, AngularFireDatabase], (_app: FBApp, _db: AngularFireDatabase) => {
       app = _app;
       db = _db;
-      ref = app.database().ref();
+      ref = app.database!().ref();
       O = new FirebaseListObservable(ref, (observer:Observer<any>) => {
       });
     })();
@@ -40,7 +44,7 @@ describe('FirebaseListObservable', () => {
   it('should return an instance of FirebaseObservable when calling operators', () => {
     O = new FirebaseListObservable(ref, (observer:Observer<any>) => {
     });
-    expect(map.call(O, noop) instanceof FirebaseListObservable).toBe(true);
+    expect(O.pipe(map(noop)) instanceof FirebaseListObservable).toBe(true);
   });
 
   describe('$ref', () => {

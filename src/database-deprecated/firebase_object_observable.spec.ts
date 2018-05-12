@@ -1,11 +1,12 @@
 import { TestBed, inject } from '@angular/core/testing';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
-import { COMMON_CONFIG } from './test-config';
-import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseObjectObservable } from 'angularfire2/database-deprecated';
-import { Observer } from 'rxjs/Observer';
-import { map } from 'rxjs/operator/map';
 import { FirebaseApp as FBApp } from '@firebase/app-types';
 import { Reference } from '@firebase/database-types';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseObjectObservable } from 'angularfire2/database-deprecated';
+import { Observer } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { COMMON_CONFIG } from './test-config';
 
 describe('FirebaseObjectObservable', () => {
 
@@ -24,7 +25,7 @@ describe('FirebaseObjectObservable', () => {
     inject([FirebaseApp, AngularFireDatabase], (_app: FBApp, _db: AngularFireDatabase) => {
       app = _app;
       db = _db;
-      ref = app.database().ref();
+      ref = app.database!().ref();
       O = new FirebaseObjectObservable((observer: Observer<any>) => {
       }, ref);
     })();
@@ -38,7 +39,7 @@ describe('FirebaseObjectObservable', () => {
 
   it('should return an instance of FirebaseObservable when calling operators', () => {
     let O = new FirebaseObjectObservable((observer: Observer<any>) => { });
-    expect(map.call(O, noop) instanceof FirebaseObjectObservable).toBe(true);
+    expect(O.pipe(map(noop)) instanceof FirebaseObjectObservable).toBe(true);
   });
 
   describe('$ref', () => {

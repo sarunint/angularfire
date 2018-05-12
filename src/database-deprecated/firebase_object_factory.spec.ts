@@ -1,9 +1,16 @@
+import { TestBed, inject } from '@angular/core/testing';
 import { FirebaseApp as FBApp } from '@firebase/app-types';
 import { Reference } from '@firebase/database-types';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import {
+  AngularFireDatabase,
+  AngularFireDatabaseModule,
+  FirebaseObjectFactory,
+  FirebaseObjectObservable
+} from 'angularfire2/database-deprecated';
 import { Subscription } from 'rxjs';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
-import { AngularFireDatabase, AngularFireDatabaseModule, FirebaseObjectObservable, FirebaseObjectFactory } from 'angularfire2/database-deprecated';
-import { TestBed, inject } from '@angular/core/testing';
+import { filter } from 'rxjs/operators';
+
 import { COMMON_CONFIG } from './test-config';
 
 describe('FirebaseObjectFactory', () => {
@@ -35,7 +42,7 @@ describe('FirebaseObjectFactory', () => {
   describe('<constructor>', () => {
 
     it('should accept a Firebase db ref in the constructor', () => {
-      const object = FirebaseObjectFactory(app.database().ref().child(`questions`));
+      const object = FirebaseObjectFactory(app.database!().ref().child(`questions`));
       expect(object instanceof FirebaseObjectObservable).toBe(true);
     });
 
@@ -45,9 +52,9 @@ describe('FirebaseObjectFactory', () => {
 
     beforeEach((done: any) => {
       i = Date.now();
-      ref = app.database().ref().child(`questions/${i}`);
+      ref = app.database!().ref().child(`questions/${i}`);
       nextSpy = nextSpy = jasmine.createSpy('next');
-      observable = FirebaseObjectFactory(app.database().ref(`questions/${i}`));
+      observable = FirebaseObjectFactory(app.database!().ref(`questions/${i}`));
       ref.remove(done);
     });
 
@@ -105,7 +112,7 @@ describe('FirebaseObjectFactory', () => {
     });
 
     it('should emit snapshots if preserveSnapshot option is true', (done: any) => {
-      observable = FirebaseObjectFactory(app.database().ref(`questions/${i}`), { preserveSnapshot: true });
+      observable = FirebaseObjectFactory(app.database!().ref(`questions/${i}`), { preserveSnapshot: true });
       ref.remove(() => {
         ref.set('preserved snapshot!', () => {
           subscription = observable.subscribe(data => {
@@ -118,7 +125,7 @@ describe('FirebaseObjectFactory', () => {
 
 
     it('should call off on all events when disposed', () => {
-      const dbRef = app.database().ref();
+      const dbRef = app.database!().ref();
       let firebaseSpy = spyOn(dbRef, 'off');
       subscription = FirebaseObjectFactory(dbRef).subscribe();
       expect(firebaseSpy).not.toHaveBeenCalled();
@@ -132,8 +139,8 @@ describe('FirebaseObjectFactory', () => {
       })
       .run(() => {
         // Creating a new observable so that the current zone is captured.
-        subscription = FirebaseObjectFactory(app.database().ref(`questions/${i}`))
-          .filter(d => d.$value === 'in-the-zone')
+        subscription = FirebaseObjectFactory(app.database!().ref(`questions/${i}`)).pipe(
+          filter(d => d.$value === 'in-the-zone'))
           .subscribe(data => {
             expect(Zone.current.name).toBe('newZone');
             done();

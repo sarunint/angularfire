@@ -1,11 +1,12 @@
 import { NgZone } from '@angular/core';
-import { FirebaseObjectObservable } from './firebase_object_observable';
-import { FirebaseZoneScheduler } from 'angularfire2';
-import { Observer } from 'rxjs/Observer';
-import { observeOn } from 'rxjs/operator/observeOn';
 import { DataSnapshot } from '@firebase/database-types';
+import { FirebaseZoneScheduler } from 'angularfire2';
+import { Observer } from 'rxjs';
+import { observeOn } from 'rxjs/operators';
+
+import { FirebaseObjectObservable } from './firebase_object_observable';
+import { DatabaseReference, FirebaseObjectFactoryOpts } from './interfaces';
 import * as utils from './utils';
-import { FirebaseObjectFactoryOpts, DatabaseReference } from './interfaces';
 
 export function FirebaseObjectFactory (
   ref: DatabaseReference,
@@ -22,5 +23,5 @@ export function FirebaseObjectFactory (
   }, ref);
 
   // TODO: should be in the subscription zone instead
-  return observeOn.call(objectObservable, new FirebaseZoneScheduler(new NgZone({}), {}));
+  return objectObservable.pipe(observeOn(new FirebaseZoneScheduler(new NgZone({}), {}))) as FirebaseObjectObservable<any>;
 }
