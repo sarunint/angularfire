@@ -1,8 +1,9 @@
-import { Observable } from 'rxjs/Observable'
-import { forkJoin } from 'rxjs/observable/forkJoin';
 import { TestBed, inject } from '@angular/core/testing';
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule, FirebaseAppName } from 'angularfire2';
-import { AngularFireStorageModule, AngularFireStorage, AngularFireUploadTask, StorageBucket } from 'angularfire2/storage';
+import { AngularFireModule, FirebaseApp, FirebaseAppConfig, FirebaseAppName } from 'angularfire2';
+import { AngularFireStorage, AngularFireStorageModule, AngularFireUploadTask, StorageBucket } from 'angularfire2/storage';
+import { forkJoin } from 'rxjs';
+import { mergeMap, tap } from 'rxjs/operators';
+
 import { COMMON_CONFIG } from './test-config';
 
 describe('AngularFireStorage', () => {
@@ -73,8 +74,8 @@ describe('AngularFireStorage', () => {
       const blob = new Blob([JSON.stringify(data)], { type : 'application/json' });
       const ref = afStorage.ref('af.json');
       const task: AngularFireUploadTask = ref.put(blob);
-      task.then(snap => { 
-        expect(snap).toBeDefined(); 
+      task.then(snap => {
+        expect(snap).toBeDefined();
         done();
       }).catch(done.fail);
     });
@@ -89,13 +90,13 @@ describe('AngularFireStorage', () => {
       const ref = afStorage.ref('af.json');
       const task = ref.put(blob);
       // Wait for the upload
-      const sub = forkJoin(task.snapshotChanges())
+      const sub = forkJoin(task.snapshotChanges()).pipe(
         // get the url download
-        .mergeMap(() => ref.getDownloadURL())
+        mergeMap(() => ref.getDownloadURL()),
         // assert the URL
-        .do(url => expect(url).toBeDefined())
+        tap(url => expect(url).toBeDefined()),
         // Delete the file
-        .mergeMap(url => ref.delete())
+        mergeMap(url => ref.delete()))
         // finish the test
         .subscribe(done, done.fail);
     });
@@ -106,13 +107,13 @@ describe('AngularFireStorage', () => {
       const ref = afStorage.ref('af.json');
       const task = ref.put(blob, { customMetadata: { blah: 'blah' } });
       // Wait for the upload
-      const sub = forkJoin(task.snapshotChanges())
+      const sub = forkJoin(task.snapshotChanges()).pipe(
         // get the metadata download
-        .mergeMap(() => ref.getMetadata())
+        mergeMap(() => ref.getMetadata()),
         // assert the URL
-        .do(meta => expect(meta.customMetadata).toEqual({ blah: 'blah' }))
+        tap(meta => expect(meta.customMetadata).toEqual({ blah: 'blah' })),
         // Delete the file
-        .mergeMap(meta => ref.delete())
+        mergeMap(meta => ref.delete()))
         // finish the test
         .subscribe(done, done.fail);
     });
@@ -151,7 +152,7 @@ describe('AngularFireStorage w/options', () => {
   });
 
   describe('<constructor>', () => {
-   
+
     it('should exist', () => {
       expect(afStorage instanceof AngularFireStorage).toBe(true);
     });
@@ -179,13 +180,13 @@ describe('AngularFireStorage w/options', () => {
       const ref = afStorage.ref('af.json');
       const task = ref.put(blob);
       // Wait for the upload
-      const sub = forkJoin(task.snapshotChanges())
+      const sub = forkJoin(task.snapshotChanges()).pipe(
         // get the url download
-        .mergeMap(() => ref.getDownloadURL())
+        mergeMap(() => ref.getDownloadURL()),
         // assert the URL
-        .do(url => expect(url).toMatch(new RegExp(`https:\\/\\/firebasestorage\\.googleapis\\.com\\/v0\\/b\\/${FIREBASE_STORAGE_BUCKET}\\/o\\/af\\.json`)))
+        tap(url => expect(url).toMatch(new RegExp(`https:\\/\\/firebasestorage\\.googleapis\\.com\\/v0\\/b\\/${FIREBASE_STORAGE_BUCKET}\\/o\\/af\\.json`))),
         // Delete the file
-        .mergeMap(url => ref.delete())
+        mergeMap(url => ref.delete()))
         // finish the test
         .subscribe(done, done.fail);
     });

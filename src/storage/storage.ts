@@ -1,10 +1,10 @@
-import { Injectable, Inject, Optional, InjectionToken, NgZone, PLATFORM_ID } from '@angular/core';
-import { FirebaseStorage, UploadMetadata } from '@firebase/storage-types';
-import { createStorageRef, AngularFireStorageReference } from './ref';
-import { createUploadTask, AngularFireUploadTask } from './task';
-import { Observable } from 'rxjs/Observable';
-import { FirebaseAppConfig, FirebaseAppName, FirebaseZoneScheduler, _firebaseAppFactory } from 'angularfire2';
+import { Inject, Injectable, InjectionToken, NgZone, Optional, PLATFORM_ID } from '@angular/core';
 import { FirebaseOptions } from '@firebase/app-types';
+import { FirebaseStorage, UploadMetadata } from '@firebase/storage-types';
+import { FirebaseAppConfig, FirebaseAppName, FirebaseZoneScheduler, _firebaseAppFactory } from 'angularfire2';
+
+import { AngularFireStorageReference, createStorageRef } from './ref';
+import { AngularFireUploadTask } from './task';
 
 export const StorageBucket = new InjectionToken<string>('angularfire2.storageBucket');
 
@@ -34,11 +34,11 @@ export class AngularFireStorage {
     });
   }
 
-  ref(path: string) {
+  ref(path: string): AngularFireStorageReference {
     return createStorageRef(this.storage.ref(path), this.scheduler);
   }
 
-  upload(path: string, data: any, metadata?: UploadMetadata) {
+  upload(path: string, data: any, metadata?: UploadMetadata): AngularFireUploadTask {
     const storageRef = this.storage.ref(path);
     const ref = createStorageRef(storageRef, this.scheduler);
     return ref.put(data, metadata);

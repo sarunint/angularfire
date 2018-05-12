@@ -1,8 +1,8 @@
-import { UploadTaskSnapshot, UploadTask } from '@firebase/storage-types';
+import { UploadTask, UploadTaskSnapshot } from '@firebase/storage-types';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+
 import { fromTask } from './observable/fromTask';
-import { Observable } from 'rxjs/Observable';
-import { map, filter } from 'rxjs/operators';
-import { from } from 'rxjs/observable/from';
 
 export interface AngularFireUploadTask {
   task: UploadTask,
@@ -13,7 +13,7 @@ export interface AngularFireUploadTask {
   cancel(): boolean;
   resume(): boolean;
   then(
-    onFulfilled?: ((a: UploadTaskSnapshot) => any) | null, 
+    onFulfilled?: ((a: UploadTaskSnapshot) => any) | null,
     onRejected?: ((a: Error) => any) | null
   ): Promise<any>;
   catch(onRejected: (a: Error) => any): Promise<any>;
@@ -23,7 +23,7 @@ export interface AngularFireUploadTask {
  * Create an AngularFireUploadTask from a regular UploadTask from the Storage SDK.
  * This method creates an observable of the upload and returns on object that provides
  * multiple methods for controlling and monitoring the file upload.
- * @param task 
+ * @param task
  */
 export function createUploadTask(task: UploadTask): AngularFireUploadTask {
   const inner$ = fromTask(task);
