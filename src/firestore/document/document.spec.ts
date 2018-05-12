@@ -1,16 +1,14 @@
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule } from 'angularfire2';
+import { TestBed, inject } from '@angular/core/testing';
+import { FirebaseApp as FBApp } from '@firebase/app-types';
+import { AngularFireModule, FirebaseApp } from 'angularfire2';
+import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
+
+import { AngularFirestoreDocument } from '../document/document';
 import { AngularFirestore } from '../firestore';
 import { AngularFirestoreModule } from '../firestore.module';
-import { AngularFirestoreDocument } from '../document/document';
-
-import { FirebaseApp as FBApp } from '@firebase/app-types';
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
-
-import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from '../test-config';
-
-import { Stock, randomName, FAKE_STOCK_DATA } from '../utils.spec';
+import { FAKE_STOCK_DATA, Stock, randomName } from '../utils.spec';
 
 describe('AngularFirestoreDocument', () => {
   let app: FBApp;
@@ -57,7 +55,7 @@ describe('AngularFirestoreDocument', () => {
     const stock = new AngularFirestoreDocument<Stock>(ref, afs);
     await stock.set(FAKE_STOCK_DATA);
     const obs$ = stock.valueChanges();
-    obs$.take(1).subscribe(async (data: Stock) => {
+    obs$.pipe(take(1)).subscribe(async (data: Stock) => {
       expect(JSON.stringify(data)).toBe(JSON.stringify(FAKE_STOCK_DATA));
       stock.delete().then(done).catch(done.fail);
     });

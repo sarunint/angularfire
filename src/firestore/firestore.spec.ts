@@ -1,13 +1,11 @@
-import { FirebaseApp, FirebaseAppConfig, AngularFireModule, FirebaseAppName } from 'angularfire2';
+import { TestBed, inject } from '@angular/core/testing';
+import { AngularFireModule, FirebaseApp, FirebaseAppConfig, FirebaseAppName } from 'angularfire2';
+import { Subscription } from 'rxjs';
+
+import { AngularFirestoreCollection } from './collection/collection';
+import { AngularFirestoreDocument } from './document/document';
 import { AngularFirestore } from './firestore';
 import { AngularFirestoreModule } from './firestore.module';
-import { AngularFirestoreDocument } from './document/document';
-import { AngularFirestoreCollection } from './collection/collection';
-
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
-
-import { TestBed, inject } from '@angular/core/testing';
 import { COMMON_CONFIG } from './test-config';
 
 interface Stock {
